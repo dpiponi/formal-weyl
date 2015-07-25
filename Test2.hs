@@ -54,14 +54,6 @@ main = do
 --     print $ sample 8 $ realF $ liftF adj state*q*state
     let a = (z*dd :: Formal (Weyl ISqrt2))
     let b = (exp(z*dd)-1 :: Formal (Weyl ISqrt2))
-    let F xs = a
-    let F ys = b
-    let d' = d :: Weyl ISqrt2
-    print $ d'/d'
-    print $ head xs==0
-    print $ head ys==0
-    print $ sample 4 a
-    print $ sample 4 b
     print $ sample 10 $ a/b
 --     print $ let F ws = a/b in head ws
 --     print $ sample 4 $ p
