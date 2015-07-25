@@ -5,29 +5,21 @@ module Weyl where
 import Data.Array
 import Data.List
 import Data.Ratio
+import Data.Tuple
+import Debug.Trace
+import Control.Applicative
+import LeftDivide
 
-data ScriptType = ScriptType { digits :: String,
-                               minus :: Char
-                             }
-
-super, sub :: ScriptType
-super = ScriptType "⁰¹²³⁴⁵⁶⁷⁸⁹" '⁻'
-sub = ScriptType "₀₁₂₃₄₅₆₇₈₉" '₋'
-
-script :: ScriptType -> Integer -> String
-script _ 0 = ""
-script s n | n < 0 = minus s : script s (-n)
-script s n = script s (n `div` 10) ++ [digits s!!fromIntegral (n `mod` 10)]
-
-subscript, superscript :: Integer -> String
-subscript = script sub
-superscript = script super
+import MShow
+import ISqrt2
 
 -- These are integer divisions. Shouldn't need Fractional.
-monomialTimes :: (Integral n, Eq n, Fractional f) =>
-    f -> n -> n -> n -> n -> [((n, n), f)]
+monomialTimes :: (Fractional f) =>
+    f -> Integer -> Integer -> Integer -> Integer -> [((Integer, Integer), f)]
 monomialTimes u r s a b =
     monomialTimes' u s a 1 (r+a) (s+b) where
+    monomialTimes' :: (Fractional f) =>
+        f -> Integer -> Integer -> Integer -> Integer -> Integer -> [((Integer, Integer), f)]
     monomialTimes' v 0 _ _ p q = [((p, q), v)]
     monomialTimes' v _ 0 _ p q = [((p, q), v)]
     monomialTimes' v _ _ _ 0 q = [((0, q), v)]
@@ -38,23 +30,27 @@ monomialTimes u r s a b =
 
 data Weyl a = W (Array (Integer, Integer) a)
 
-fn :: (Ix i, Num e) => Array i e -> i -> e
-fn u i = if inRange (bounds u) i then u!i else 0
+adj :: (Conjugatable a, Show a) => Weyl a -> Weyl a
+adj (W ws) = W $ conj <$> ixmap (let (x, y) = bounds ws in (swap x, swap y)) swap ws
 
-combineBounds :: (Num t, Ix t) =>
-                 (t -> t -> t) -> Array (t, t) e1 -> Array (t, t) e -> ((t, t), (t, t))
+combineBounds :: (Integer -> Integer -> Integer) ->
+                 Array (Integer, Integer) e1 -> Array (Integer, Integer) e ->
+                 ((Integer, Integer), (Integer, Integer))
 combineBounds f u v =
     let (_, (mx, nx)) = bounds u
         (_, (my, ny)) = bounds v
         in ((0, 0), (f mx my, f nx ny))
+
+fn :: (Ix i, Num e) => Array i e -> i -> e
+fn u i = if inRange (bounds u) i then u!i else 0
 
 weylPlus :: Num a => Weyl a -> Weyl a -> Weyl a
 weylPlus (W u) (W v) =
     let bz = combineBounds max u v
     in W $ accumArray (+) 0 bz [(i, fn u i+fn v i) | i <- range bz]
 
-weylEq :: (Num a, Eq a) => Weyl a -> Weyl a -> Bool
-weylEq (W u) (W v) =
+weylEq :: (Show a, Num a, Eq a) => Weyl a -> Weyl a -> Bool
+weylEq (W u) (W v) = 
     let bz = combineBounds max u v
     in and [fn u i == fn v i | i <- range bz]
 
@@ -64,13 +60,38 @@ weylTimes (W u) (W v) =
     in W $ accumArray (+) 0 bz
         [e | ((r, s), p) <- assocs u,
              ((a, b), q) <- assocs v,
-             e <- monomialsFromProduct (p*q) r s a b]
+             e <- monomialTimes (p*q) r s a b]
 
-instance (Eq a, Num a) => Eq (Weyl a) where
+-- in (i, j): i labels row, j column
+startsWithZeroRow :: (Num a, Eq a) => Weyl a -> Bool
+startsWithZeroRow (W ws) =
+    let (_, (_, maxcol)) = bounds ws
+    in and [ws!(0, i) == 0 | i <- [0..maxcol]]
+
+startsWithZeroCol :: (Num a, Eq a) => Weyl a -> Bool
+startsWithZeroCol (W ws) =
+    let (_, (maxrow, _)) = bounds ws
+    in and [ws!(i, 0) == 0 | i <- [0..maxrow]]
+
+removeFirstCol :: (Num a) => Weyl a -> Weyl a
+removeFirstCol (W ws) =
+    let (_, (rows, maxcol)) = bounds ws
+    in W $ ixmap ((0, 0), (rows, maxcol-1)) (\(i,j) -> (i, j+1)) ws
+
+removeFirstRow :: (Num a) => Weyl a -> Weyl a
+removeFirstRow (W ws) =
+    let (_, (maxrow, cols)) = bounds ws
+    in W $ ixmap ((0, 0), (maxrow-1, cols)) (\(i,j) -> (i+1, j)) ws
+
+instance (Show a, Eq a, Num a) => Eq (Weyl a) where
     (==) = weylEq
 
-instance Show (Weyl Rational) where
-    show = weylShow
+instance (Show a, Eq a, Fractional a, Num a, MShow a) => MShow (Weyl a) where
+    mshow' n x = parens 6 n (mshow x) 
+    mshow = weylShow
+
+instance (Show a, Eq a, Fractional a, Num a, MShow a) => Show (Weyl a) where
+    show x = mshow x
 
 monoPower :: Integer -> String -> String
 monoPower 0 _ = ""
@@ -78,36 +99,34 @@ monoPower 1 s = s
 monoPower n s = s ++ superscript n
 
 weylRational :: Rational -> String
-weylRational r =
-    let nm = numerator r
-        dn = denominator r
-    in if dn == 1
-        then show nm
-        else superscript nm ++ "/" ++ subscript dn
-weylRational' :: Rational -> String
+weylRational = mshow
 
 weylRational' 1 = ""
 weylRational' u = weylRational u
 
-nonNull :: String -> String
-nonNull "" = "1"
-nonNull u = u
+-- nonNull :: String -> String
+-- nonNull "" = "1"
+-- nonNull u = u
 
-weylShow :: Weyl Rational -> String
+data WMonomial a = WM Integer Integer a
+
+instance (Eq a, MShow a, Num a) => MShow (WMonomial a) where
+    mshow' n w = parens 7 n (mshow w)
+    mshow (WM i j w) = 
+                    atLeast "1" ((if w == 1 then "" else mshow' 7 w) ++
+                                      monoPower i "X" ++
+                                      monoPower j "D")
+
+-- Can use mshow' 6 for terms with i == j == 0
+weylShow :: (Show a, Fractional a, MShow a, Num a, Eq a) => Weyl a -> String
 weylShow u | u == 0 = "0"
-weylShow (W u) = intercalate "+"
-                    [nonNull (weylRational' w ++
-                              monoPower i "X" ++
-                              monoPower j "D") |
+weylShow (W u) = sumMShow 0 -- ??
+                    [WM i j w |
                      ((i, j), w) <- assocs u,
                      w /= 0]
 
-weylShow' :: (Show r, Floating r, Eq r) => Weyl r -> String
-weylShow' u | u == 0 = "0"
-weylShow' (W u) = intercalate "+"
-                    [nonNull (show w ++ monoPower i "X" ++ monoPower j "D") |
-                     ((i, j), w) <- assocs u,
-                     w /= 0]
+weylShow' :: (Show a, Fractional a, Eq a, MShow a, Num a) => Weyl a -> String
+weylShow' u = atLeast "0" $ weylShow u
 
 scalarTimes :: Num a => a -> Weyl a -> Weyl a
 scalarTimes s (W t) = W $ fmap (s *) t
@@ -127,12 +146,24 @@ instance (Fractional a, Num a) => Num (Weyl a) where
     negate = scalarTimes (-1)
     abs = error "No abs"
     signum = error "No signum"
+    
+-- a `wLeftDivide` b = divide a by b on left, ie. b\a
+instance (MShow a, Eq a, Show a, Fractional a) => LeftDivide (Weyl a) where
+    a `wLeftDivide` b | startsWithZeroRow a && startsWithZeroRow b = removeFirstRow a `wLeftDivide` removeFirstRow b
+    a `wLeftDivide` b | startsWithZeroCol a && startsWithZeroCol b = removeFirstCol a `wLeftDivide` removeFirstCol b
+    a `wLeftDivide` b = {-trace("<<"++show a ++ "/" ++ show b ++ ">>") $ -} recip b*a
 
-instance (Fractional a) => Fractional (Weyl a) where
+instance (MShow a, Eq a, Show a, Fractional a) => Fractional (Weyl a) where
     fromRational u = W $ listArray ((0, 0), (0, 0)) [fromRational u]
-    recip (W u) =
-        case assocs u of
-            [((0, 0), a)] -> W $ array (bounds u) [((0, 0), recip a)]
-            _ -> error "Impossible recip"
+    a/b | startsWithZeroRow a && startsWithZeroRow b = {- trace ("{{"++show a ++ "/" ++ show b++"}}") $ -} removeFirstRow a/removeFirstRow b
+    a/b | startsWithZeroCol a && startsWithZeroCol b = {- trace ("(("++show a ++ "/" ++ show b++"))") $ -} removeFirstCol a/removeFirstCol b
+    a/b = {- trace("[["++show a ++ "/" ++ show b++"]]") $ -} a*recip b
+            
+    recip (W u) = 
+        let vs = filter ((/= 0) . snd) $ assocs u
+        in case vs of
+            [((0, 0), a)] -> W $ array ((0,0),(0,0)) [((0, 0), recip a)]
+            a -> error $ "Can't compute recip: " ++ show a
+            -- Actually, can divide if we can shift array left or down
 
 -- instance (Floating a) => Floating (Weyl a)

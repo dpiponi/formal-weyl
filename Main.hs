@@ -9,13 +9,16 @@ import Data.Ratio
 import Data.Complex
 import Prelude hiding (exp)
 
+import ISqrt2
 import Weyl
 import Formal
 
 injectFW = injectF . injectW
 
+{-
 i :: Num a => Complex a
 i = 0 :+ 1
+-}
 
 main :: IO ()
 main = do
@@ -55,7 +58,29 @@ main = do
 --     print $ sample 6 $ dd*xx*dd*xx*xx*xx*dd*xx*dd
 --     print $ sample 6 $ dd*dd*dd*xx*xx*xx
 
-    let xx = F (x : repeat 0) :: Formal (Weyl Rational)
-    let dd = F (d : repeat 0) :: Formal (Weyl Rational)
-    let q = (xx*xx*dd*dd)*(xx*xx*dd*dd)*(xx*xx*dd*dd)
-    print q
+    let xx = injectF x :: Formal (Weyl Rational)
+    let dd = injectF d :: Formal (Weyl Rational)
+--     let q = (xx*xx*dd*dd)*(xx*xx*dd*dd)*(xx*xx*dd*dd)
+--     print q
+
+--     Stirling numbers second kind
+--     let q = left_invert (1-z*xx*dd)
+--     print q
+
+    -- Lah numbers
+    -- https://en.wikipedia.org/wiki/Lah_number
+--     let q = left_invert (1-z*xx*dd*dd)
+--     print q
+
+    -- X^nD^n in z^(n+1) is http://oeis.org/A217900
+--     let q = right_invert (1-z*xx*xx*dd*dd)
+--     print q
+
+    let a = sqrt2
+    print a
+    print $ a*a
+    print $ i*a+a
+    print $ (0 :: ISqrt2)
+
+    print $ (x :: Weyl ISqrt2)
+    print $ (x*x*d*injectW sqrt2+1 :: Weyl ISqrt2)
