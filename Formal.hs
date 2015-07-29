@@ -49,18 +49,18 @@ egfToOgf (F a) = F $ egfToOgf' 0 1 a where
 injectF :: Num a => a -> Formal a
 injectF u = F $ u : repeat 0
 
--- leftInvert (x0:xs) = trace ("> " ++ show x0) $ r where r = map (*recip x0) (1:repeat 0) ^- (r `convolve` (0:xs))
--- 
-rightDivide y (x0:xs) = trace ("> " ++ show x0) $ r
-                        where r = map (`wLeftDivide` x0) (y ^- ((0:xs) `rconvolve` r))
+rightDivide y (x0:xs) = r
+                        where r = map (`wLeftDivide` x0)
+                                      (y ^- ((0:xs) `rconvolve` r))
 
-instance (Show r, Eq r, Fractional r, LeftDivide r) => Fractional (Formal r) where
+instance (Show r, Eq r, Fractional r, LeftDivide r) =>
+        Fractional (Formal r) where
     F (x:xs)/F (y:ys) = 
         if x==0 && y==0
             then F xs/F ys
             else F $ rightDivide (x:xs) (y:ys)
-    --recip (F xs) = F (leftInvert xs)
     fromRational u = F $ fromRational u:repeat 0
+
 
 z :: Num a => Formal a
 z = F $ [0, 1] ++ repeat 0
@@ -72,9 +72,37 @@ deriv _ = error "Impossible deriv"
 integrate :: Fractional a => Formal a -> Formal a
 integrate (F u) = F $ 0 : zipWith (*) (map ((1 /) . fromInteger) [1..]) u
 
+lead :: [a] -> Formal a -> Formal a
+lead [] (F x) = F x
+lead (a:as) (F x) = F $ a : y where F y = lead as (F $ tail x)
+
+(...) :: [a] -> Formal a -> Formal a
+a ... x = lead a x
+
 -- exp is assuming 0 for first term XXX
+-- Maybe for other fns too.
 instance (Show a, Eq a, Num a, Fractional a, LeftDivide a) => Floating (Formal a) where
-    exp u = e where e = 1+integrate (e*deriv u)
+    exp u@(F (0:_)) = e where e = [1] ... integrate (e*deriv u)
+    sinh u@(F (0:_)) = integrate (cosh u*deriv u)
+    cosh u@(F (0:_)) = [1] ... integrate (sinh u*deriv u)
+    sin u = integrate (cos u*deriv u)
+    cos u@(F (0:_)) = [1] ... negate (integrate (sin u*deriv u))
+    -- I think this approach is fine for non-commutative case as long
+    -- as first element of series is central.
+    -- This version needs first element of series to be 1.
+    sqrt (F x@(1 : _)) = F (1:rs) where rs = map (/2) (xs ^- (rs `convolve` (0:rs)))
+                                        _:xs = x
+
+    log = error "log not implemented for formal power series yet"
+    pi = error "pi not implemented for formal power series yet"
+    tan = error "tan not implemented for formal power series yet"
+    tanh = error "tanh not implemented for formal power series yet"
+    asin = error "asin not implemented for formal power series yet"
+    acos = error "acos not implemented for formal power series yet"
+    atan = error "atan not implemented for formal power series yet"
+    asinh = error "asinh not implemented for formal power series yet"
+    acosh = error "acosh not implemented for formal power series yet"
+    atanh = error "atanh not implemented for formal power series yet"
 
 -- star :: (Eq a, Num a, Fractional a) => Formal a -> Formal a
 -- star u = e where e = 1+e*u

@@ -1,3 +1,8 @@
+-- Formal power series.
+-- Note the big caveat for division.
+-- Probably best to use division only when constant term
+-- of divisor is non-zero.
+
 {-# LANGUAGE FlexibleInstances #-}
 
 module Weyl where
@@ -144,26 +149,50 @@ instance (Fractional a, Num a) => Num (Weyl a) where
     (+) = weylPlus
     (*) = weylTimes
     negate = scalarTimes (-1)
-    abs = error "No abs"
-    signum = error "No signum"
+    abs = error "I don't know what abs would mean here."
+    signum = error "Pretty sure signum makes no sense here."
     
 -- a `wLeftDivide` b = divide a by b on left, ie. b\a
 instance (MShow a, Eq a, Show a, Fractional a) => LeftDivide (Weyl a) where
-    a `wLeftDivide` b | startsWithZeroRow a && startsWithZeroRow b = removeFirstRow a `wLeftDivide` removeFirstRow b
-    a `wLeftDivide` b | startsWithZeroCol a && startsWithZeroCol b = removeFirstCol a `wLeftDivide` removeFirstCol b
-    a `wLeftDivide` b = {-trace("<<"++show a ++ "/" ++ show b ++ ">>") $ -} recip b*a
+    a `wLeftDivide` b | startsWithZeroRow a && startsWithZeroRow b
+                        = removeFirstRow a `wLeftDivide` removeFirstRow b
+                      | startsWithZeroCol a && startsWithZeroCol b
+                        = removeFirstCol a `wLeftDivide` removeFirstCol b
+                      | otherwise = recip b*a
 
 instance (MShow a, Eq a, Show a, Fractional a) => Fractional (Weyl a) where
     fromRational u = W $ listArray ((0, 0), (0, 0)) [fromRational u]
-    a/b | startsWithZeroRow a && startsWithZeroRow b = {- trace ("{{"++show a ++ "/" ++ show b++"}}") $ -} removeFirstRow a/removeFirstRow b
-    a/b | startsWithZeroCol a && startsWithZeroCol b = {- trace ("(("++show a ++ "/" ++ show b++"))") $ -} removeFirstCol a/removeFirstCol b
-    a/b = {- trace("[["++show a ++ "/" ++ show b++"]]") $ -} a*recip b
+
+    -- XXX This code is not quite correct.
+    -- Only trust it when the coefficients in your
+    -- power series commute with each other,
+    -- or if the leading coefficient is non-zero.
+    -- So it's good for things like a/(1+z*(...))
+    -- The correct thing here is to have a separate type for
+    -- commutative formal power series which is
+    -- the only time I want to use the startsWith... tests.
+    -- I only use this to compute the Bernoulli series g.f.
+    a/b | startsWithZeroRow a && startsWithZeroRow b
+          = removeFirstRow a/removeFirstRow b
+        | startsWithZeroCol a && startsWithZeroCol b
+          = removeFirstCol a/removeFirstCol b
+        | otherwise = a*recip b
             
     recip (W u) = 
         let vs = filter ((/= 0) . snd) $ assocs u
         in case vs of
             [((0, 0), a)] -> W $ array ((0,0),(0,0)) [((0, 0), recip a)]
             a -> error $ "Can't compute recip: " ++ show a
-            -- Actually, can divide if we can shift array left or down
 
 -- instance (Floating a) => Floating (Weyl a)
+
+realW :: Num a => Weyl a -> a
+realW (W w) = w!(0,0)
+
+polyPart :: Num a => Weyl a -> Weyl a
+polyPart (W ws) = let ((0, 0), (rows, cols)) = bounds ws
+                  in W $ array ((0, 0), (rows, 0)) [((i, 0), ws!(i, 0)) | i <- [0..rows]]
+
+substitute :: (Num a, Num b) => (a -> Integer -> Integer -> b) -> Weyl a -> b
+substitute f (W ws) =
+    sum [f w m n | ((m, n), w) <- assocs ws]
