@@ -96,7 +96,7 @@ instance (Show a, Eq a, Fractional a, Num a, MShow a) => MShow (Weyl a) where
     mshow = weylShow
 
 instance (Show a, Eq a, Fractional a, Num a, MShow a) => Show (Weyl a) where
-    show x = mshow x
+    show = mshow
 
 monoPower :: Integer -> String -> String
 monoPower 0 _ = ""
@@ -164,13 +164,12 @@ instance (MShow a, Eq a, Show a, Fractional a) => Fractional (Weyl a) where
     fromRational u = W $ listArray ((0, 0), (0, 0)) [fromRational u]
 
     -- XXX This code is not quite correct.
-    -- Only trust it when the coefficients in your
-    -- power series commute with each other,
-    -- or if the leading coefficient is non-zero.
-    -- So it's good for things like a/(1+z*(...))
-    -- The correct thing here is to have a separate type for
-    -- commutative formal power series which is
-    -- the only time I want to use the startsWith... tests.
+    -- I'm trying to press the Weyl type into double duty as a polynomial
+    -- type as well. It does this fine if you stick with just x's or just
+    -- d's. Then cancellations like x^3/x^2 = x make sense.
+    -- Really I need a separate polynomial type.
+    -- It's probably less than half the size of this type so it shouldn't
+    -- take long...
     -- I only use this to compute the Bernoulli series g.f.
     a/b | startsWithZeroRow a && startsWithZeroRow b
           = removeFirstRow a/removeFirstRow b
