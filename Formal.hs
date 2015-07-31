@@ -109,33 +109,3 @@ instance (Show a, Eq a, Num a, Fractional a, LeftDivide a) => Floating (Formal a
 
 sample :: Int -> Formal a -> [a]
 sample n (F xs) = take n xs
-
--- assume x0 = 1 -- seems not to work???
-{-
-leftInvert (F x) = F r where r = map (/x0) (1:repeat 0) ^- (r `convolve` (0:xs))
-                             x0:xs = x 
--}
-
-{-
-rightInvert (F x) = F r where r = map (/x0) (1:repeat 0) ^- ((0:xs) `rconvolve` r)
-                              x0:xs = x 
--}
-
-{-
- - 1/(a+b+c+d+...)
- - = (1/a) (1/(1+b/c+c/a+d/a+...)
-
-p... is right inverse of a
-
-(a+bx+cx^2+...)(p+qx+rx^2+...) = 1
-ap = 1
-
-p is right inverse of a
-
-Want q now...
-aq+bp = 0
-
-commutative case: q = -bp/a = -bp^2
-non-commutative q = (left inverse a)bp
- 
- -}

@@ -36,18 +36,21 @@ test_show =
 
 -- exp (-a)*exp a = 1
 test_exp = do
-    let a = exp (z*(xx+dd))
-    let b = exp (-z*(xx+dd))
-    assertEqual (show (Formal.sample 6 (a*b))) "[1,0,0,0,0,0]"
+    let a = exp (z*(xx^3+dd^2))
+    let b = exp (-z*(xx^3+dd^2))
+    assertEqual (show (Formal.sample 8 (a*b))) "[1,0,0,0,0,0,0,0]"
 
--- sqrt (a)^2 = 1
+-- (sqrt a)^2 = 1
+-- sqrt (a^2) = 1
 test_sqrt = do
-    let u = sqrt (1+z*(xx+dd))
-    assertEqual (Formal.sample 6 (u^2)) [1, x+d, 0, 0, 0, 0]
+    let u = 1+z*(xx+dd)
+    assertEqual (Formal.sample 6 (sqrt u^2)) [1, x+d, 0, 0, 0, 0]
+    assertEqual (Formal.sample 6 (sqrt (u^2))) [1, x+d, 0, 0, 0, 0]
 
+-- (cos u)^2+(cos v)^2 = 1
 test_trig = do
-    let u = sin (z*(xx+dd))
-    let v = cos (z*(xx+dd))
-    assertEqual (Formal.sample 6 (u^2+v^2)) [1, 0, 0, 0, 0, 0]
+    let u = sin (z*(xx^2+dd))
+    let v = cos (z*(xx^2+dd))
+    assertEqual (Formal.sample 10 (u^2+v^2)) [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 main = htfMain htf_thisModulesTests

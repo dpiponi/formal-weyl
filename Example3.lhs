@@ -10,6 +10,7 @@ Squeezed light examples.
 See, for example: http://arxiv.org/pdf/1401.4118v1.pdf
 
 > import qualified Weyl as W
+> import qualified Poly as P
 > import Formal
 > import ISqrt2
 
@@ -24,6 +25,7 @@ First some useful inclusions:
 
 > a' = k W.x :: Formal (W.Weyl ISqrt2)
 > a = k W.d :: Formal (W.Weyl ISqrt2)
+> y = injectF P.x :: Formal (P.Poly ISqrt2)
 
 The adjoint.
 
@@ -50,15 +52,15 @@ is not a well-defined function on the Weyl algebra.
 It's well defined on the free non-commutative algebra ℝ⟦a,a'⟧,
 ie. "unsimplified" expressions containing a and a'.
 Instead I cheat. A normal ordered function of a'*a is
-just the "same" function of a commuting variable, x, where we substitute
-(a')^n*a^n for x^n at the end.
+just the "same" function of a commuting variable, y, where we substitute
+(a')^n*a^n for y^n at the end.
 
 (See section 3 of http://cds.cern.ch/record/794566/files/0409152.pdf)
 
 >   let u = sample 10 $ exp (-z*n)
->   let v = sample 10 $ exp ((exp (-z)-1)*k W.x)
+>   let v = sample 10 $ exp ((exp (-z)-1)*y)
 >   print u
->   print $ map (W.substitute (\w m 0 -> W.injectW w*W.x^m*W.d^m)) $ v
+>   print $ map (P.substitute (\w m -> W.injectW w*W.x^m*W.d^m)) $ v
 
 Now testing some computations relating to squeezed light.
 

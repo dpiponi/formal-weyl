@@ -38,13 +38,18 @@ They form a Sheffer sequence in the sense that
 
 D/(D-1) L_n(x) = L_{n-1)(x)
 
+Need to make this prettier somehow. In mathematics you can skip
+explicitly mentioning injections everywhere but in Haskell
+we need to be explicit.
+
 >   let laguerre n = let n0 = fromInteger n
 >                    in sum $ sample (n0+1) $ liftF W.polyPart $
 >                       exp (z*x)*d^n0*exp (-z*x)*x^n0
 
 >   let laguerre5 = laguerre 5
->   let laguerre4 = 5*(sum $ sample 10 $ liftF W.polyPart $ k $ laguerre 4)
->   let laguerre4' = sum $ sample 10 $ liftF W.polyPart $ z*d/(z*d-1)*k laguerre5
+>   let laguerre4 = 5*laguerre 4
+>   let laguerre4' = W.polyPart $ sum $ sample 10 $ z*d/(z*d-1)*injectF (W.inject_x laguerre5)
+
 >   print laguerre4
 >   print laguerre4'
 

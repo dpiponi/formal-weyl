@@ -14,6 +14,8 @@ import Data.Tuple
 import Debug.Trace
 import Control.Applicative
 import LeftDivide
+import Padded
+import qualified Poly as P
 
 import MShow
 import ISqrt2
@@ -24,7 +26,8 @@ monomialTimes :: (Fractional f) =>
 monomialTimes u r s a b =
     monomialTimes' u s a 1 (r+a) (s+b) where
     monomialTimes' :: (Fractional f) =>
-        f -> Integer -> Integer -> Integer -> Integer -> Integer -> [((Integer, Integer), f)]
+        f -> Integer -> Integer -> Integer -> Integer -> Integer ->
+        [((Integer, Integer), f)]
     monomialTimes' v 0 _ _ p q = [((p, q), v)]
     monomialTimes' v _ 0 _ p q = [((p, q), v)]
     monomialTimes' v _ _ _ 0 q = [((0, q), v)]
@@ -46,18 +49,22 @@ combineBounds f u v =
         (_, (my, ny)) = bounds v
         in ((0, 0), (f mx my, f nx ny))
 
+{-
 fn :: (Ix i, Num e) => Array i e -> i -> e
 fn u i = if inRange (bounds u) i then u!i else 0
+-}
 
 weylPlus :: Num a => Weyl a -> Weyl a -> Weyl a
 weylPlus (W u) (W v) =
     let bz = combineBounds max u v
-    in W $ accumArray (+) 0 bz [(i, fn u i+fn v i) | i <- range bz]
+--    in W $ accumArray bz $ padded $ (+) <$> (assocs u :- 0) <*> (assocs v :- 0)
+    in W $ accumArray (+) 0 bz $ assocs u ++ assocs v
 
 weylEq :: (Show a, Num a, Eq a) => Weyl a -> Weyl a -> Bool
 weylEq (W u) (W v) = 
     let bz = combineBounds max u v
-    in and [fn u i == fn v i | i <- range bz]
+--    in and [fn u i == fn v i | i <- range bz]
+    in and $ map snd $ padded $ (==) <$> (assocs u :- 0) <*> (assocs v :- 0)
 
 weylTimes :: (Num a, Fractional a) => Weyl a -> Weyl a -> Weyl a
 weylTimes (W u) (W v) =
@@ -152,31 +159,14 @@ instance (Fractional a, Num a) => Num (Weyl a) where
     abs = error "I don't know what abs would mean here."
     signum = error "Pretty sure signum makes no sense here."
     
+-- Only support trivial divisions.
 -- a `wLeftDivide` b = divide a by b on left, ie. b\a
 instance (MShow a, Eq a, Show a, Fractional a) => LeftDivide (Weyl a) where
-    a `wLeftDivide` b | startsWithZeroRow a && startsWithZeroRow b
-                        = removeFirstRow a `wLeftDivide` removeFirstRow b
-                      | startsWithZeroCol a && startsWithZeroCol b
-                        = removeFirstCol a `wLeftDivide` removeFirstCol b
-                      | otherwise = recip b*a
+    a `wLeftDivide` b = recip b*a
 
 instance (MShow a, Eq a, Show a, Fractional a) => Fractional (Weyl a) where
     fromRational u = W $ listArray ((0, 0), (0, 0)) [fromRational u]
-
-    -- XXX This code is not quite correct.
-    -- I'm trying to press the Weyl type into double duty as a polynomial
-    -- type as well. It does this fine if you stick with just x's or just
-    -- d's. Then cancellations like x^3/x^2 = x make sense.
-    -- Really I need a separate polynomial type.
-    -- It's probably less than half the size of this type so it shouldn't
-    -- take long...
-    -- I only use this to compute the Bernoulli series g.f.
-    a/b | startsWithZeroRow a && startsWithZeroRow b
-          = removeFirstRow a/removeFirstRow b
-        | startsWithZeroCol a && startsWithZeroCol b
-          = removeFirstCol a/removeFirstCol b
-        | otherwise = a*recip b
-            
+    a/b = a*recip b
     recip (W u) = 
         let vs = filter ((/= 0) . snd) $ assocs u
         in case vs of
@@ -188,10 +178,17 @@ instance (MShow a, Eq a, Show a, Fractional a) => Fractional (Weyl a) where
 realW :: Num a => Weyl a -> a
 realW (W w) = w!(0,0)
 
-polyPart :: Num a => Weyl a -> Weyl a
+polyPart :: Num a => Weyl a -> P.Poly a
 polyPart (W ws) = let ((0, 0), (rows, cols)) = bounds ws
-                  in W $ array ((0, 0), (rows, 0)) [((i, 0), ws!(i, 0)) | i <- [0..rows]]
+                  in P.P $ array (0, rows) [(i, ws!(i, 0)) | i <- [0..rows]]
 
 substitute :: (Num a, Num b) => (a -> Integer -> Integer -> b) -> Weyl a -> b
 substitute f (W ws) =
     sum [f w m n | ((m, n), w) <- assocs ws]
+
+-- Fractional shouldn't be needed here XXX
+inject_x :: (Fractional a, Num a) => P.Poly a -> Weyl a
+inject_x = P.substitute (\w n -> injectW w*x^n)
+
+inject_d :: (Fractional a, Num a) => P.Poly a -> Weyl a
+inject_d = P.substitute (\w n -> injectW w*d^n)
