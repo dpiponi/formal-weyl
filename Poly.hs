@@ -15,6 +15,7 @@ import Debug.Trace
 import Control.Applicative
 import LeftDivide
 import Padded
+import Over
 
 import MShow
 import ISqrt2
@@ -127,6 +128,9 @@ x = P $ listArray (0, 1) [0, 1]
 
 injectP :: Num a => a -> Poly a
 injectP u = P $ listArray ((0, 0)) [u]
+
+instance Over Poly where
+    ι = injectP
 
 instance (Fractional a, Num a) => Num (Poly a) where
     fromInteger = injectP . fromInteger

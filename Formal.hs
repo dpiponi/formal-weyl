@@ -2,6 +2,7 @@ module Formal where
 
 import Debug.Trace
 import LeftDivide
+import Over
 
 (*!) :: (Num a, Eq a) => a -> a -> a
 (*!) _ 0 = 0
@@ -49,6 +50,9 @@ egfToOgf (F a) = F $ egfToOgf' 0 1 a where
 injectF :: Num a => a -> Formal a
 injectF u = F $ u : repeat 0
 
+instance Over Formal where
+    ι = injectF
+
 rightDivide y (x0:xs) = r
                         where r = map (`wLeftDivide` x0)
                                       (y ^- ((0:xs) `rconvolve` r))
@@ -94,7 +98,7 @@ instance (Show a, Eq a, Num a, Fractional a, LeftDivide a) => Floating (Formal a
                                         _:xs = x
 
     log = error "log not implemented for formal power series yet"
-    pi = error "pi not implemented for formal power series yet"
+    pi = error "pi not implemented for formal power series"
     tan = error "tan not implemented for formal power series yet"
     tanh = error "tanh not implemented for formal power series yet"
     asin = error "asin not implemented for formal power series yet"
@@ -109,3 +113,7 @@ instance (Show a, Eq a, Num a, Fractional a, LeftDivide a) => Floating (Formal a
 
 sample :: Int -> Formal a -> [a]
 sample n (F xs) = take n xs
+
+approx :: Num a => Int -> a -> Formal a -> a
+approx n z (F xs) = let zs = 1 : map (z *) zs
+                    in sum $ zipWith (*) (take n xs) zs

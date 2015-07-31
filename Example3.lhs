@@ -13,19 +13,11 @@ See, for example: http://arxiv.org/pdf/1401.4118v1.pdf
 > import qualified Poly as P
 > import Formal
 > import ISqrt2
+> import Over
 
-First some useful inclusions:
-
-  j      k
-ℝ → W(ℝ) → W(ℝ)⟦z⟧
-
-> j = W.injectW
-> k = injectF
-> kj = k . j
-
-> a' = k W.x :: Formal (W.Weyl ISqrt2)
-> a = k W.d :: Formal (W.Weyl ISqrt2)
-> y = injectF P.x :: Formal (P.Poly ISqrt2)
+> a' = ι W.x :: Formal (W.Weyl ISqrt2)
+> a = ι W.d :: Formal (W.Weyl ISqrt2)
+> y = ι P.x :: Formal (P.Poly ISqrt2)
 
 The adjoint.
 
@@ -60,17 +52,17 @@ just the "same" function of a commuting variable, y, where we substitute
 >   let u = sample 10 $ exp (-z*n)
 >   let v = sample 10 $ exp ((exp (-z)-1)*y)
 >   print u
->   print $ map (P.substitute (\w m -> W.injectW w*W.x^m*W.d^m)) $ v
+>   print $ map (P.substitute (\w m -> ι w * W.x^m * W.d^m)) $ v
 
 Now testing some computations relating to squeezed light.
 
 The position operator:
 
->   let q = kj (1/sqrt2)*(a'+a)
+>   let q = (ι . ι) (1/sqrt2)*(a'+a)
 
 The momentum operator:
 
->   let p = kj (-i/sqrt2)*(a-a')
+>   let p = (ι . ι) (-i/sqrt2)*(a-a')
 
 This operator "squeezes" a state:
 

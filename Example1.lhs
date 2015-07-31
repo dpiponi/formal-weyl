@@ -12,10 +12,11 @@ The Euler-Maclaurin summation formula.
 > import ISqrt2
 > import Data.Array
 > import MShow
+> import Over
 
-> u = injectF P.x :: Formal (P.Poly Rational)
-> x = injectF W.x :: Formal (W.Weyl Rational)
-> d = injectF W.d :: Formal (W.Weyl Rational)
+> u = ι P.x :: Formal (P.Poly Rational)
+> x = ι W.x :: Formal (W.Weyl Rational)
+> d = ι W.d :: Formal (W.Weyl Rational)
 
 > main = do
 >   let b = z*u/(exp (z*u)-1) :: Formal (P.Poly Rational)

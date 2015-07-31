@@ -10,25 +10,24 @@ Messing with polynomials.
 > import Formal
 > import Data.Array
 > import MShow
+> import Over
 
-> k = injectF
-
-> x = k W.x :: Formal (W.Weyl Rational)
-> d = k W.d :: Formal (W.Weyl Rational)
+> x = ι W.x :: Formal (W.Weyl Rational)
+> d = ι W.d :: Formal (W.Weyl Rational)
 
 > main = do
 
 Compare the result of computing the 10th Hermite polynomial in two different ways.
 
->   let hermite10 = sum $ sample 11 $ liftF W.polyPart $ exp(z*x^2)*d^10*exp(-z*x^2)
->   let hermite10' = sum $ sample 11 $ liftF W.polyPart $ exp(z*x^2/2)*(x-d)^10*exp(-z*x^2/2)
+>   let hermite10 = approx 11 1 $ liftF W.polyPart $ exp(z*x^2)*d^10*exp(-z*x^2)
+>   let hermite10' = approx 11 1 $ liftF W.polyPart $ exp(z*x^2/2)*(x-d)^10*exp(-z*x^2/2)
 >   print hermite10
 >   print hermite10'
 
 We can test the well known shift formula: exp(αD)f(x+α)
 
->   let poly = sum $ sample 11 $ liftF W.polyPart $ exp (z*d)*x^10
->   let poly' = sum $ sample 11 $ liftF W.polyPart $ (x+1)^10
+>   let poly = approx 11 1 $ liftF W.polyPart $ exp (z*d)*x^10
+>   let poly' = approx 11 1 $ liftF W.polyPart $ (x+1)^10
 >   print poly
 >   print poly'
 
@@ -43,12 +42,12 @@ explicitly mentioning injections everywhere but in Haskell
 we need to be explicit.
 
 >   let laguerre n = let n0 = fromInteger n
->                    in sum $ sample (n0+1) $ liftF W.polyPart $
+>                    in approx (n0+1) 1 $ liftF W.polyPart $
 >                       exp (z*x)*d^n0*exp (-z*x)*x^n0
 
 >   let laguerre5 = laguerre 5
 >   let laguerre4 = 5*laguerre 4
->   let laguerre4' = W.polyPart $ sum $ sample 10 $ z*d/(z*d-1)*injectF (W.inject_x laguerre5)
+>   let laguerre4' = W.polyPart $ approx 10 1 $ z*d/(z*d-1)*ι (W.inject_x laguerre5)
 
 >   print laguerre4
 >   print laguerre4'

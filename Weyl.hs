@@ -16,6 +16,7 @@ import Control.Applicative
 import LeftDivide
 import Padded
 import qualified Poly as P
+import Over
 
 import MShow
 import ISqrt2
@@ -150,6 +151,9 @@ x = W $ listArray ((0, 0), (1, 0)) [0, 1]
 
 injectW :: Num a => a -> Weyl a
 injectW u = W $ listArray ((0, 0), (0, 0)) [u]
+
+instance Over Weyl where
+    ι = injectW
 
 instance (Fractional a, Num a) => Num (Weyl a) where
     fromInteger = injectW . fromInteger

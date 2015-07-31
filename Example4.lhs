@@ -12,11 +12,10 @@ OEIS explorations.
 > import Formal
 > import Data.Array
 > import MShow
+> import Over
 
-> k = injectF
-
-> x = k W.x :: Formal (W.Weyl Rational)
-> d = k W.d :: Formal (W.Weyl Rational)
+> x = ι W.x :: Formal (W.Weyl Rational)
+> d = ι W.d :: Formal (W.Weyl Rational)
 
 > realF = liftF W.realW
 

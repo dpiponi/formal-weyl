@@ -11,8 +11,7 @@ Some basic Weyl algebra combinatorics.
 > import ISqrt2
 > import Data.Array
 > import MShow
-
-> injectFW = injectF . injectW
+> import Over
 
 > a' = x :: Weyl Rational
 > a = d :: Weyl Rational

@@ -9,11 +9,10 @@ import Test.Framework
 
 import Weyl
 import Formal
+import Over
 
-injectFW = injectF . injectW
-
-xx = injectF x :: Formal (Weyl Rational)
-dd = injectF d :: Formal (Weyl Rational)
+xx = ι x :: Formal (Weyl Rational)
+dd = ι d :: Formal (Weyl Rational)
 
 test_show_x =
     assertEqual (show (Formal.sample 10 xx)) "[X,0,0,0,0,0,0,0,0,0]"
@@ -40,8 +39,8 @@ test_exp = do
     let b = exp (-z*(xx^3+dd^2))
     assertEqual (show (Formal.sample 8 (a*b))) "[1,0,0,0,0,0,0,0]"
 
--- (sqrt a)^2 = 1
--- sqrt (a^2) = 1
+-- (sqrt a)^2 = a
+-- sqrt (a^2) = a
 test_sqrt = do
     let u = 1+z*(xx+dd)
     assertEqual (Formal.sample 6 (sqrt u^2)) [1, x+d, 0, 0, 0, 0]
