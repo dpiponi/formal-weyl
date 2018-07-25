@@ -18,3 +18,7 @@ https://arxiv.org/abs/1010.0354
 Status
 ------
 This is a completed project, but incomplete code. The code isn't perfect but it allowed me to perform certain computations I wanted to experiment with.
+
+Some things that could be improved
+* format of output
+* division is (of course) a partial function. In this case we have left-division and right-division and I haven't made any effort to characterise when exactly a division is valid.
