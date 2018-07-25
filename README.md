@@ -22,3 +22,4 @@ This is a completed project, but incomplete code. The code isn't perfect but it 
 Some things that could be improved
 * format of output
 * division is (of course) a partial function. In this case we have left-division and right-division and I haven't made any effort to characterise when exactly a division is valid.
+* Showing two series share the first few coefficients isn't a proof that the series are equal. Except it is(!!!) if you can prove some other properties first. Maybe one day I'll do this. See https://en.wikipedia.org/wiki/Holonomic_function
